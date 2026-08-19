@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design Extractor</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="brand">
+      <div class="brand-icon">DE</div>
+      <h1 class="brand-title">Design Extractor</h1>
+    </div>
+    <span class="badge-version">v1.0</span>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container">
+    <!-- Primary Extraction Trigger -->
+    <button id="extractBtn" class="btn-primary" type="button">
+      <span id="btnSpinner" class="spinner" style="display: none;"></span>
+      <span id="btnText">Extract from this page</span>
+    </button>
+
+    <!-- Status Feedback Banner -->
+    <div id="statusBox" class="status-box info" style="display: flex;">
+      <span id="statusIcon" class="status-icon">💡</span>
+      <span id="statusText">Click above to extract tokens from the active tab.</span>
+    </div>
+
+    <!-- Preview Section (Hidden until extracted) -->
+    <div id="previewSection" style="display: none; flex-direction: column; gap: 12px;">
+      
+      <!-- Navigation Tabs -->
+      <div class="tabs-header" role="tablist">
+        <button id="tabMarkdown" class="tab-btn active" role="tab" aria-selected="true" type="button">Markdown</button>
+        <button id="tabSwatches" class="tab-btn" role="tab" aria-selected="false" type="button">Color Swatches</button>
+        <button id="tabJson" class="tab-btn" role="tab" aria-selected="false" type="button">JSON</button>
+      </div>
+
+      <!-- Tab Content: Markdown Preview -->
+      <div id="contentMarkdown" class="tab-content active" role="tabpanel">
+        <div class="preview-container">
+          <pre id="markdownPreview" class="preview-block">Waiting for extraction...</pre>
+        </div>
+      </div>
+
+      <!-- Tab Content: Visual Color Swatches -->
+      <div id="contentSwatches" class="tab-content" role="tabpanel">
+        <div id="swatchesGrid" class="swatches-grid">
+          <!-- Swatches rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- Tab Content: JSON Preview -->
+      <div id="contentJson" class="tab-content" role="tabpanel">
+        <div class="preview-container">
+          <pre id="jsonPreview" class="preview-block">Waiting for extraction...</pre>
+        </div>
+      </div>
+
+      <!-- Actions Row -->
+      <div class="actions-row">
+        <button id="downloadMdBtn" class="btn-secondary" type="button" title="Download design.md file">
+          📄 Download design.md
+        </button>
+        <button id="downloadJsonBtn" class="btn-secondary" type="button" title="Download raw tokens as JSON">
+          📦 JSON
+        </button>
+        <button id="copyMdBtn" class="btn-secondary" type="button" title="Copy Markdown to Clipboard">
+          📋 Copy
+        </button>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>
