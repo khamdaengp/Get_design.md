@@ -1,8 +1,8 @@
 /**
- * Design Extractor - Content Script Engine
+ * Design Extractor - Content Script Engine (Updated with CSS Custom Variables Extraction)
  * Injected on demand via chrome.scripting.executeScript.
  * Walks the DOM, samples visible elements, collects computed styles into frequency maps,
- * extracts media breakpoints, and returns a structured token object.
+ * extracts media breakpoints, extracts CSS custom variables (--*), and returns a structured token object.
  */
 
 (function () {
@@ -94,7 +94,6 @@
 
     // Typography
     if (style.fontFamily) {
-      // Clean up quotes and standardize
       const primaryFont = style.fontFamily
         .split(',')[0]
         .trim()
@@ -127,7 +126,27 @@
     });
   }
 
-  // Extract Breakpoints from stylesheets safely
+  // Extract CSS Custom Variables (--*) from :root and Stylesheets
+  const cssVarMap = new Map();
+  
+  // 1. Inspect computed styles on :root (document.documentElement)
+  try {
+    const rootStyles = window.getComputedStyle(document.documentElement);
+    for (let i = 0; i < rootStyles.length; i++) {
+      const prop = rootStyles[i];
+      if (prop.startsWith('--')) {
+        const rawVal = rootStyles.getPropertyValue(prop).trim();
+        const formattedVal = rgbToHex(rawVal) || rawVal;
+        if (formattedVal) {
+          cssVarMap.set(prop, { name: prop, value: formattedVal, count: 1 });
+        }
+      }
+    }
+  } catch (e) {
+    // Ignore root computed style error
+  }
+
+  // 2. Safely traverse document.styleSheets for declared CSS custom properties
   const breakpointsMap = new Map();
   try {
     const styleSheets = Array.from(document.styleSheets);
@@ -135,10 +154,10 @@
       try {
         const rules = Array.from(sheet.cssRules || sheet.rules || []);
         rules.forEach(rule => {
+          // Check Media Breakpoints
           if (rule.type === CSSRule.MEDIA_RULE || rule.media) {
             const mediaText = rule.media ? rule.media.mediaText : '';
             if (mediaText) {
-              // Extract min-width and max-width values
               const widthMatches = mediaText.match(/\((min|max)-width:\s*([\d.]+(px|em|rem))\)/gi);
               if (widthMatches) {
                 widthMatches.forEach(match => {
@@ -148,13 +167,29 @@
               }
             }
           }
+
+          // Check CSS Variables in Style Rules (e.g. :root, body)
+          if (rule.style) {
+            for (let i = 0; i < rule.style.length; i++) {
+              const propName = rule.style[i];
+              if (propName.startsWith('--')) {
+                const val = rule.style.getPropertyValue(propName).trim();
+                const formattedVal = rgbToHex(val) || val;
+                if (cssVarMap.has(propName)) {
+                  cssVarMap.get(propName).count += 1;
+                } else if (formattedVal) {
+                  cssVarMap.set(propName, { name: propName, value: formattedVal, count: 1 });
+                }
+              }
+            }
+          }
         });
       } catch (err) {
-        // Cross-origin stylesheet access restriction - silently ignore as specified
+        // Cross-origin stylesheet security restriction - silently ignore
       }
     });
   } catch (e) {
-    // Top level stylesheet inspection error fallback
+    // Top level stylesheet error fallback
   }
 
   const sortedBreakpoints = Array.from(breakpointsMap.entries())
@@ -162,7 +197,10 @@
     .sort((a, b) => b.count - a.count)
     .slice(0, 10);
 
-  // Format spacing scale sorted numerically by px value
+  const sortedCssVars = Array.from(cssVarMap.values())
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 35);
+
   const sortedSpacing = spacingScale.getTop(20).sort((a, b) => {
     const parseFloatPx = (str) => parseFloat(str) * (str.includes('rem') ? 16 : str.includes('em') ? 16 : 1);
     return parseFloatPx(a.value) - parseFloatPx(b.value);
@@ -183,6 +221,7 @@
     radii: borderRadii.getTop(10),
     shadows: boxShadows.getTop(8),
     spacing: sortedSpacing,
-    breakpoints: sortedBreakpoints
+    breakpoints: sortedBreakpoints,
+    cssVariables: sortedCssVars
   };
 })();

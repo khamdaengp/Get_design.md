@@ -1,5 +1,5 @@
 /**
- * Design Extractor - Popup Controller
+ * Design Extractor - Popup Controller (Updated with Exporters & CSS Variables)
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -14,19 +14,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const previewSection = document.getElementById('previewSection');
   const markdownPreview = document.getElementById('markdownPreview');
+  const varsPreview = document.getElementById('varsPreview');
   const jsonPreview = document.getElementById('jsonPreview');
   const swatchesGrid = document.getElementById('swatchesGrid');
 
   const tabMarkdown = document.getElementById('tabMarkdown');
+  const tabVars = document.getElementById('tabVars');
   const tabSwatches = document.getElementById('tabSwatches');
   const tabJson = document.getElementById('tabJson');
 
   const contentMarkdown = document.getElementById('contentMarkdown');
+  const contentVars = document.getElementById('contentVars');
   const contentSwatches = document.getElementById('contentSwatches');
   const contentJson = document.getElementById('contentJson');
 
   const downloadMdBtn = document.getElementById('downloadMdBtn');
   const downloadJsonBtn = document.getElementById('downloadJsonBtn');
+  const downloadTailwindBtn = document.getElementById('downloadTailwindBtn');
+  const downloadScssBtn = document.getElementById('downloadScssBtn');
+  const downloadW3cBtn = document.getElementById('downloadW3cBtn');
   const copyMdBtn = document.getElementById('copyMdBtn');
 
   let extractedData = null;
@@ -44,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     extractBtn.disabled = isLoading;
     if (isLoading) {
       btnSpinner.style.display = 'inline-block';
-      btnText.textContent = 'Scanning DOM...';
+      btnText.textContent = 'Scanning DOM & Stylesheets...';
     } else {
       btnSpinner.style.display = 'none';
       btnText.textContent = 'Extract from this page';
@@ -54,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Tab Switching Logic
   const tabs = [
     { btn: tabMarkdown, content: contentMarkdown },
+    { btn: tabVars, content: contentVars },
     { btn: tabSwatches, content: contentSwatches },
     { btn: tabJson, content: contentJson }
   ];
@@ -108,13 +115,14 @@ document.addEventListener('DOMContentLoaded', () => {
       // 3. Format outputs
       markdownContent = buildMarkdown(extractedData);
       markdownPreview.textContent = markdownContent;
+      varsPreview.textContent = buildVarsPreview(extractedData);
       jsonPreview.textContent = JSON.stringify(extractedData, null, 2);
 
       renderSwatches(extractedData);
 
       // 4. Reveal Preview UI & Success status
       previewSection.style.display = 'flex';
-      setStatus(`Successfully extracted design tokens! (Sampled ${extractedData.sampledCount} elements)`, 'success', '✅');
+      setStatus(`Extracted tokens & ${extractedData.cssVariables ? extractedData.cssVariables.length : 0} CSS variables! (${extractedData.sampledCount} nodes sampled)`, 'success', '✅');
 
     } catch (err) {
       console.error("Design Extractor error:", err);
@@ -154,6 +162,17 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     } else {
       lines.push('*No background colors detected.*');
+    }
+    lines.push('');
+
+    // CSS Custom Variables
+    lines.push('## CSS Custom Variables (--*)');
+    if (data.cssVariables && data.cssVariables.length > 0) {
+      data.cssVariables.forEach(item => {
+        lines.push(`- \`${item.name}\`: \`${item.value}\``);
+      });
+    } else {
+      lines.push('*No CSS custom variables found on :root or in accessible stylesheets.*');
     }
     lines.push('');
 
@@ -241,10 +260,149 @@ document.addEventListener('DOMContentLoaded', () => {
         lines.push(`- \`${item.value}\` (${item.count} rules found)`);
       });
     } else {
-      lines.push('*No media breakpoints extracted (may be in cross-origin stylesheets or inline styles).*');
+      lines.push('*No media breakpoints extracted (may be in cross-origin stylesheets).*');
     }
 
     return lines.join('\n');
+  }
+
+  // Format CSS Variables (:root { ... })
+  function buildVarsPreview(data) {
+    if (!data.cssVariables || data.cssVariables.length === 0) {
+      return '/* No CSS custom properties (--*) detected on :root or in accessible stylesheets */';
+    }
+
+    const lines = [':root {'];
+    data.cssVariables.forEach(v => {
+      lines.push(`  ${v.name}: ${v.value};`);
+    });
+    lines.push('}');
+    return lines.join('\n');
+  }
+
+  // Format Tailwind CSS Configuration Snippet
+  function buildTailwindConfig(data) {
+    const config = {
+      theme: {
+        extend: {
+          colors: {},
+          fontFamily: {},
+          spacing: {},
+          borderRadius: {}
+        }
+      }
+    };
+
+    // Color mapping
+    (data.backgroundColors || []).slice(0, 8).forEach((item, idx) => {
+      config.theme.extend.colors[`brand-${idx + 1}`] = item.value;
+    });
+
+    // Font families
+    (data.fontFamilies || []).slice(0, 4).forEach((item, idx) => {
+      const name = idx === 0 ? 'sans' : `font-${idx + 1}`;
+      config.theme.extend.fontFamily[name] = [item.value, 'sans-serif'];
+    });
+
+    // Spacing
+    (data.spacing || []).slice(0, 10).forEach((item, idx) => {
+      config.theme.extend.spacing[`custom-${idx + 1}`] = item.value;
+    });
+
+    // Radii
+    (data.radii || []).slice(0, 6).forEach((item, idx) => {
+      config.theme.extend.borderRadius[`radius-${idx + 1}`] = item.value;
+    });
+
+    return `/** @type {import('tailwindcss').Config} */\nmodule.exports = ${JSON.stringify(config, null, 2)};\n`;
+  }
+
+  // Format SCSS Variables Snippet
+  function buildScssVariables(data) {
+    const lines = [`// SCSS Variables extracted from ${data.title}`, `// Source: ${data.url}`, ''];
+
+    // Colors
+    lines.push('// Color Tokens');
+    (data.backgroundColors || []).slice(0, 10).forEach((item, idx) => {
+      lines.push(`$color-bg-${idx + 1}: ${item.value};`);
+    });
+    (data.colors || []).slice(0, 10).forEach((item, idx) => {
+      lines.push(`$color-text-${idx + 1}: ${item.value};`);
+    });
+    lines.push('');
+
+    // Fonts
+    lines.push('// Typography');
+    (data.fontFamilies || []).slice(0, 5).forEach((item, idx) => {
+      lines.push(`$font-family-${idx + 1}: "${item.value}", sans-serif;`);
+    });
+    lines.push('');
+
+    // Spacing
+    lines.push('// Spacing');
+    (data.spacing || []).slice(0, 10).forEach((item, idx) => {
+      lines.push(`$spacing-${idx + 1}: ${item.value};`);
+    });
+    lines.push('');
+
+    // CSS Custom Variables fallback
+    if (data.cssVariables && data.cssVariables.length > 0) {
+      lines.push('// Custom Properties');
+      data.cssVariables.forEach(v => {
+        const scssName = v.name.replace(/^--/, '$');
+        lines.push(`${scssName}: ${v.value};`);
+      });
+    }
+
+    return lines.join('\n');
+  }
+
+  // Format W3C Design Tokens JSON format
+  function buildW3cTokens(data) {
+    const tokens = {
+      $schema: "https://unpkg.com/design-tokens-format-module@latest/deftok.json",
+      color: {},
+      typography: {
+        fontFamily: {}
+      },
+      spacing: {},
+      borderRadius: {}
+    };
+
+    // Colors
+    (data.colors || []).slice(0, 10).forEach((item, idx) => {
+      tokens.color[`text-${idx + 1}`] = {
+        $value: item.value,
+        $type: "color",
+        $description: `Used ${item.count} times for text`
+      };
+    });
+
+    (data.backgroundColors || []).slice(0, 10).forEach((item, idx) => {
+      tokens.color[`background-${idx + 1}`] = {
+        $value: item.value,
+        $type: "color",
+        $description: `Used ${item.count} times for background`
+      };
+    });
+
+    // Fonts
+    (data.fontFamilies || []).slice(0, 5).forEach((item, idx) => {
+      tokens.typography.fontFamily[`font-${idx + 1}`] = {
+        $value: item.value,
+        $type: "fontFamily"
+      };
+    });
+
+    // Spacing
+    (data.spacing || []).slice(0, 10).forEach((item, idx) => {
+      tokens.spacing[`scale-${idx + 1}`] = {
+        $value: item.value,
+        $type: "dimension"
+      };
+    });
+
+    return JSON.stringify(tokens, null, 2);
   }
 
   // Render Visual Color Swatches
@@ -307,18 +465,31 @@ document.addEventListener('DOMContentLoaded', () => {
       filename: filename,
       saveAs: true
     }, () => {
-      // Clean up object URL
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     });
   }
 
-  // Download design.md
+  // Download Event Listeners
   downloadMdBtn.addEventListener('click', () => {
     if (!markdownContent) return;
     triggerDownload(markdownContent, 'design.md', 'text/markdown;charset=utf-8');
   });
 
-  // Download design.json
+  downloadTailwindBtn.addEventListener('click', () => {
+    if (!extractedData) return;
+    triggerDownload(buildTailwindConfig(extractedData), 'tailwind.config.js', 'application/javascript;charset=utf-8');
+  });
+
+  downloadScssBtn.addEventListener('click', () => {
+    if (!extractedData) return;
+    triggerDownload(buildScssVariables(extractedData), '_variables.scss', 'text/x-scss;charset=utf-8');
+  });
+
+  downloadW3cBtn.addEventListener('click', () => {
+    if (!extractedData) return;
+    triggerDownload(buildW3cTokens(extractedData), 'tokens.json', 'application/json;charset=utf-8');
+  });
+
   downloadJsonBtn.addEventListener('click', () => {
     if (!extractedData) return;
     triggerDownload(JSON.stringify(extractedData, null, 2), 'design.json', 'application/json;charset=utf-8');

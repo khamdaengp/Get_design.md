@@ -13,7 +13,7 @@
       <div class="brand-icon">DE</div>
       <h1 class="brand-title">Design Extractor</h1>
     </div>
-    <span class="badge-version">v1.0</span>
+    <span class="badge-version">v1.1</span>
   </header>
 
   <!-- Main Container -->
@@ -27,7 +27,7 @@
     <!-- Status Feedback Banner -->
     <div id="statusBox" class="status-box info" style="display: flex;">
       <span id="statusIcon" class="status-icon">💡</span>
-      <span id="statusText">Click above to extract tokens from the active tab.</span>
+      <span id="statusText">Click above to extract design tokens & CSS variables.</span>
     </div>
 
     <!-- Preview Section (Hidden until extracted) -->
@@ -36,7 +36,8 @@
       <!-- Navigation Tabs -->
       <div class="tabs-header" role="tablist">
         <button id="tabMarkdown" class="tab-btn active" role="tab" aria-selected="true" type="button">Markdown</button>
-        <button id="tabSwatches" class="tab-btn" role="tab" aria-selected="false" type="button">Color Swatches</button>
+        <button id="tabVars" class="tab-btn" role="tab" aria-selected="false" type="button">CSS Variables</button>
+        <button id="tabSwatches" class="tab-btn" role="tab" aria-selected="false" type="button">Swatches</button>
         <button id="tabJson" class="tab-btn" role="tab" aria-selected="false" type="button">JSON</button>
       </div>
 
@@ -44,6 +45,13 @@
       <div id="contentMarkdown" class="tab-content active" role="tabpanel">
         <div class="preview-container">
           <pre id="markdownPreview" class="preview-block">Waiting for extraction...</pre>
+        </div>
+      </div>
+
+      <!-- Tab Content: CSS Custom Variables -->
+      <div id="contentVars" class="tab-content" role="tabpanel">
+        <div class="preview-container">
+          <pre id="varsPreview" class="preview-block">No CSS variables extracted.</pre>
         </div>
       </div>
 
@@ -61,16 +69,30 @@
         </div>
       </div>
 
-      <!-- Actions Row -->
+      <!-- Primary Download Row -->
       <div class="actions-row">
-        <button id="downloadMdBtn" class="btn-secondary" type="button" title="Download design.md file">
-          📄 Download design.md
-        </button>
-        <button id="downloadJsonBtn" class="btn-secondary" type="button" title="Download raw tokens as JSON">
-          📦 JSON
+        <button id="downloadMdBtn" class="btn-secondary active-accent" type="button" title="Download design.md file">
+          📄 design.md
         </button>
         <button id="copyMdBtn" class="btn-secondary" type="button" title="Copy Markdown to Clipboard">
           📋 Copy
+        </button>
+      </div>
+
+      <!-- Advanced Exporters Row -->
+      <div class="exporters-label">Export Code Frameworks:</div>
+      <div class="actions-grid">
+        <button id="downloadTailwindBtn" class="btn-exporter" type="button" title="Download tailwind.config.js">
+          🌊 Tailwind Config
+        </button>
+        <button id="downloadScssBtn" class="btn-exporter" type="button" title="Download _variables.scss">
+          🎨 SCSS Vars
+        </button>
+        <button id="downloadW3cBtn" class="btn-exporter" type="button" title="Download W3C tokens.json">
+          🏷️ W3C Tokens
+        </button>
+        <button id="downloadJsonBtn" class="btn-exporter" type="button" title="Download raw tokens JSON">
+          📦 Raw JSON
         </button>
       </div>
 

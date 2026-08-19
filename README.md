@@ -1,21 +1,33 @@
 # Design Extractor — Chrome Extension (Manifest V3)
 
-**Design Extractor** is a sleek Chrome browser extension designed for designers, developers, and UI engineers to reverse-engineer any website's design system tokens in seconds.
+**Design Extractor** is a powerful Chrome browser extension designed for designers, developers, and UI engineers to reverse-engineer any website's design system tokens in seconds.
 
-It scans the active web page, collects computed styles from the DOM, calculates token frequencies, extracts responsive media breakpoints, and generates a structured `design.md` summary alongside raw JSON data.
+It scans the active web page, collects computed styles from the DOM, calculates token frequencies, extracts responsive media breakpoints, extracts CSS custom variables (`:root` properties), and generates structured design tokens across multiple export formats.
 
 ---
 
-## Features
+## Key Features
 
 - 🎨 **Color Palette Extraction**: Normalizes RGB/RGBA colors to clean HEX format, groups text & background colors, and filters transparent values.
+- ⚙️ **CSS Custom Properties (`--*`)**: Inspects `:root` and stylesheets to extract declared CSS custom variables (`--primary-color`, `--font-sans`, etc.).
 - 🔤 **Typography System**: Ranks primary font families, font sizes, font weights, and line heights by usage.
 - 📐 **Spacing Scale**: Groups margin and padding values into a clean, numerically sorted spacing scale.
 - 🔳 **Borders & Radii**: Extracts top border radius tokens used across cards, buttons, and inputs.
 - 🌗 **Box Shadows**: Captures drop-shadow and elevation definitions.
 - 📱 **Media Breakpoints**: Reads `@media` rules from page stylesheets to capture responsive breakpoint thresholds.
-- 👁️ **Live Swatch & Markdown Preview**: View visual color swatches or raw Markdown before exporting.
-- 💾 **Multi-Format Export**: Download `design.md` or raw `design.json`, or copy Markdown directly to your clipboard.
+- 👁️ **Visual Swatch & Code Preview**: View visual color swatches or inspect raw Markdown and CSS variables before exporting.
+
+---
+
+## Export Formats Supported
+
+Export your reverse-engineered design tokens into your framework of choice with one click:
+
+1. **`design.md`**: Clean markdown document summarizing design tokens with counts and source details.
+2. **`tailwind.config.js`**: Ready-to-use Tailwind CSS theme extension snippet.
+3. **`_variables.scss`**: SCSS variables file (`$color-bg-1`, `$font-family-1`, `$spacing-1`).
+4. **`tokens.json`**: W3C Design Tokens standard format.
+5. **`design.json`**: Complete raw extracted token metadata JSON.
 
 ---
 
@@ -31,11 +43,11 @@ It scans the active web page, collects computed styles from the DOM, calculates 
 
 ## How to Use
 
-1. Navigate to any web page you want to inspect (e.g., GitHub, Stripe, Wikipedia).
+1. Navigate to any web page you want to inspect (e.g., GitHub, Stripe, Vercel).
 2. Click the **Design Extractor** extension icon in your Chrome toolbar.
 3. Click **"Extract from this page"**.
-4. Explore the **Markdown**, **Color Swatches**, and **JSON** preview tabs.
-5. Click **"Download design.md"** to save your markdown summary file.
+4. Explore the **Markdown**, **CSS Variables**, **Swatches**, and **JSON** preview tabs.
+5. Download your preferred format: **`design.md`**, **Tailwind Config**, **SCSS Vars**, or **W3C Tokens**.
 
 ---
 
@@ -44,16 +56,16 @@ It scans the active web page, collects computed styles from the DOM, calculates 
 ### Permissions Requested
 - `activeTab`: Grants temporary access to inspect the currently focused tab when invoked.
 - `scripting`: Allows injecting the DOM token extraction script (`content.js`) on demand.
-- `downloads`: Enables triggering browser file downloads for `design.md` and `design.json`.
+- `downloads`: Enables triggering browser file downloads.
 
 ### Project Structure
 ```
 Extension_design_md/
 ├── manifest.json       # Manifest V3 configuration & permission definitions
 ├── background.js       # Minimal background service worker
-├── content.js          # DOM extraction engine (samples DOM & reads getComputedStyle)
-├── popup.html          # Toolbar extension UI layout
-├── popup.js            # UI controller, markdown generator, and download handler
+├── content.js          # DOM & CSS Variable extraction engine
+├── popup.html          # Extension UI layout with export tools
+├── popup.js            # UI controller & multi-format export generators
 ├── styles.css          # Dark-themed UI design system
 ├── icons/              # Extension icons (16px, 48px, 128px)
 │   ├── icon16.png
@@ -68,20 +80,11 @@ Extension_design_md/
 
 1. **Cross-Origin Stylesheets (`SecurityError`)**:
    - Modern browsers block reading CSS rules from cross-origin stylesheets (`<link rel="stylesheet">` hosted on external CDNs without CORS headers).
-   - The breakpoint parser safely skips cross-origin stylesheets without throwing uncaught errors.
+   - The breakpoint and stylesheet variable parser safely skips cross-origin stylesheets without throwing uncaught errors.
 
 2. **Restricted System Pages**:
    - Chrome's security policies forbid injecting content scripts into `chrome://` internal pages, `chrome-extension://` pages, `about:` pages, or the Chrome Web Store.
    - Design Extractor displays a clear warning message when attempted on restricted pages.
 
 3. **DOM Element Sampling Limit (~3,000 nodes)**:
-   - For optimal browser performance on large single-page applications with tens of thousands of DOM elements, extraction samples up to ~3,000 visible nodes. This provides a comprehensive statistical sampling of design tokens without freezing the browser tab.
-
----
-
-## Enhancements Beyond Spec
-
-- **Visual Swatches Panel**: Renders interactive color swatches in the popup window.
-- **JSON Data Export**: Supports exporting raw structured token metrics as `design.json`.
-- **Clipboard Integration**: Instant "Copy Markdown" action button.
-- **Color Clustering & Normalization**: Automatically converts RGB/RGBA values to uppercase HEX representation for standard design system handoff.
+   - For optimal browser performance on large single-page applications with tens of thousands of DOM elements, extraction samples up to ~3,000 visible nodes.
